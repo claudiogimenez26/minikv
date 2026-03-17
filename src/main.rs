@@ -67,7 +67,13 @@ fn ejecutar_set(args: &[String], store: &mut HashMap<String, String>) {
                     }
                 };
 
-                if let Err(e) = writeln!(log, "set {} {}", clave, valor) {
+                if let Err(e) = writeln!(
+                                    log,
+                                    "set \"{}\" \"{}\"",
+                                    escapar(clave),
+                                    escapar(valor)
+                                )
+            {
                     println!("Error escribiendo log: {}", e);
                 }
             }
@@ -89,7 +95,7 @@ fn ejecutar_set(args: &[String], store: &mut HashMap<String, String>) {
                     }
                 };
 
-                if let Err(e) = writeln!(log, "set {}", clave) {
+                if let Err(e) = writeln!(log, "set \"{}\"", clave) {
                     println!("Error escribiendo log: {}", e);
                 }
             }
@@ -125,19 +131,56 @@ fn ejecutar_set(args: &[String], store: &mut HashMap<String, String>) {
         println!("Número de pares clave-valor en el store: {}", store.len());
     }
 
+    fn parse_line(line: &str) -> Vec<String> {
+        let mut result = Vec::new();
+        let mut current = String::new();
+        let mut in_quotes = false;
+
+        let mut chars = line.chars().peekable();
+
+        while let Some(c) = chars.next() {
+            match c {
+                '\\' => {
+                    if let Some(next) = chars.next() {
+                        current.push(next);
+                    }
+                }
+                '"' => {
+                    in_quotes = !in_quotes;
+                }
+                ' ' if !in_quotes => {
+                    if !current.is_empty() {
+                        result.push(current);
+                        current = String::new(); // ⚠️ sin clone
+                    }
+                }
+                _ => current.push(c),
+            }
+        }
+
+        if !current.is_empty() {
+            result.push(current);
+        }
+
+        result
+    }
+
     fn cargar_data(store: &mut HashMap<String, String>) {
         let file = File::open(".minikv.data");
-        //let reader = BufReader::new(file);
-        
+
         match file {
             Ok(file) => {
                 let reader = BufReader::new(file);
+
                 for line in reader.lines() {
                     if let Ok(l) = line {
-                        //let parts: Vec<&str> = l.splitn(2, '=').collect();
-                        let parts: Vec<&str> = l.split_whitespace().collect();
+                        let mut parts = parse_line(&l);
+
                         if parts.len() == 2 {
-                            store.insert(parts[0].to_string(), parts[1].to_string());
+                            let clave = parts.remove(0);
+                            let valor = parts.remove(0);
+
+                            store.insert(clave, valor);
                         }
                     }
                 }
@@ -148,29 +191,38 @@ fn ejecutar_set(args: &[String], store: &mut HashMap<String, String>) {
 
     fn aplicar_log(store: &mut HashMap<String, String>) {
         let file = File::open(".minikv.log");
+
         match file {
             Ok(file) => {
                 let reader = BufReader::new(file);
+
                 for line in reader.lines() {
                     if let Ok(l) = line {
-                        let parts: Vec<&str> = l.split_whitespace().collect();
+                        let mut parts = parse_line(&l);
+
                         if parts.len() >= 2 {
-                            match parts[0] {
+                            let comando = parts.remove(0);
+
+                            match comando.as_str() {
                                 "set" => {
-                                    if parts.len() == 3 {
-                                        store.insert(parts[1].to_string(), parts[2].to_string());
-                                    }else if parts.len() == 2 {
-                                        store.remove(parts[1]);
+                                    if parts.len() == 2 {
+                                        let clave = parts.remove(0);
+                                        let valor = parts.remove(0);
+
+                                        store.insert(clave, valor);
+                                    } else if parts.len() == 1 {
+                                        let clave = parts.remove(0);
+
+                                        store.remove(&clave);
                                     }
                                 }
-                                _ => {},
+                                _ => {}
                             }
                         }
                     }
                 }
             }
             Err(_) => {}
-            
         }
     }
 
@@ -185,7 +237,13 @@ fn ejecutar_set(args: &[String], store: &mut HashMap<String, String>) {
         };
 
         for (clave, valor) in store {
-            if let Err(e) = writeln!(file, "{} {}", clave, valor) {
+            if let Err(e) = writeln!(
+                                file,
+                                "\"{}\" \"{}\"",
+                                escapar(clave),
+                                escapar(valor)
+                            )
+            {
                 println!("Error al escribir en el archivo de snapshot: {}", e);
                 return;
             }
@@ -241,4 +299,8 @@ fn ejecutar_set(args: &[String], store: &mut HashMap<String, String>) {
             assert_eq!(store.len(), 2);
         }
 
+    }
+
+    fn escapar(s: &str) -> String {
+        s.replace('"', "\\\"")
     }
