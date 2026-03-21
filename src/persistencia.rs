@@ -6,61 +6,48 @@ use std::io::{BufRead, BufReader, Write};
 pub fn cargar_data(store: &mut Store) {
     let file = File::open(".minikv.data");
 
-    match file {
-        Ok(file) => {
-            let reader = BufReader::new(file);
+    if let Ok(file) = file {
+        let reader = BufReader::new(file);
 
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    let mut parts = parse_line(&l);
+        for l in reader.lines().map_while(Result::ok) {
+            let mut parts = parse_line(&l);
 
-                    if parts.len() == 2 {
-                        let clave = parts.remove(0);
-                        let valor = parts.remove(0);
+            if parts.len() == 2 {
+                let clave = parts.remove(0);
+                let valor = parts.remove(0);
 
-                        store.set(clave, valor);
-                    }
-                }
+                store.set(clave, valor);
             }
         }
-        Err(_) => {} // si no existe, está bien
     }
 }
 
 pub fn aplicar_log(store: &mut Store) {
     let file = File::open(".minikv.log");
 
-    match file {
-        Ok(file) => {
-            let reader = BufReader::new(file);
+    if let Ok(file) = file {
+        let reader = BufReader::new(file);
 
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    let mut parts = parse_line(&l);
+        for l in reader.lines().map_while(Result::ok) {
+            let mut parts = parse_line(&l);
 
-                    if parts.len() >= 2 {
-                        let comando = parts.remove(0);
+            if parts.len() >= 2 {
+                let comando = parts.remove(0);
 
-                        match comando.as_str() {
-                            "set" => {
-                                if parts.len() == 2 {
-                                    let clave = parts.remove(0);
-                                    let valor = parts.remove(0);
+                if comando.as_str() == "set" {
+                    if parts.len() == 2 {
+                        let clave = parts.remove(0);
+                        let valor = parts.remove(0);
 
-                                    store.set(clave, valor);
-                                } else if parts.len() == 1 {
-                                    let clave = parts.remove(0);
+                        store.set(clave, valor);
+                    } else if parts.len() == 1 {
+                        let clave = parts.remove(0);
 
-                                    store.delete(&clave);
-                                }
-                            }
-                            _ => {}
-                        }
+                        store.delete(&clave);
                     }
                 }
             }
         }
-        Err(_) => {} // si no existe log, no pasa nada
     }
 }
 
