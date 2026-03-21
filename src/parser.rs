@@ -18,7 +18,7 @@ pub fn parse_line(line: &str) -> Vec<String> {
                 ' ' if !in_quotes => {
                     if !current.is_empty() {
                         result.push(current);
-                        current = String::new(); // ⚠️ sin clone
+                        current = String::new();
                     }
                 }
                 _ => current.push(c),
