@@ -1,8 +1,9 @@
-use crate::store::Store;
 use crate::parser::parse_line;
+use crate::store::Store;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 
+///Carga el snapshot inicial desde minikv.data.
 pub fn cargar_data(store: &mut Store) {
     let file = File::open(".minikv.data");
 
@@ -22,6 +23,7 @@ pub fn cargar_data(store: &mut Store) {
     }
 }
 
+///Aplica el log de operciones para reconstruir el estado actual.
 pub fn aplicar_log(store: &mut Store) {
     let file = File::open(".minikv.log");
 
@@ -51,6 +53,7 @@ pub fn aplicar_log(store: &mut Store) {
     }
 }
 
+///Guarda una operación set clave-valor en el log de operaciones.
 pub fn guardar_set(clave: &str, valor: &str) {
     let mut log = match OpenOptions::new()
         .create(true)
@@ -64,16 +67,12 @@ pub fn guardar_set(clave: &str, valor: &str) {
         }
     };
 
-    if let Err(e) = writeln!(
-        log,
-        "set \"{}\" \"{}\"",
-        escapar(clave),
-        escapar(valor)
-    ) {
+    if let Err(e) = writeln!(log, "set \"{}\" \"{}\"", escapar(clave), escapar(valor)) {
         println!("Error escribiendo log: {}", e);
     }
 }
 
+///Guarda una operacion unset (set sin valor) en el log de operaciones para indicar que la clave fue borrada.
 pub fn guardar_delete(clave: &str) {
     let mut log = match OpenOptions::new()
         .create(true)
@@ -92,8 +91,8 @@ pub fn guardar_delete(clave: &str) {
     }
 }
 
+///genera un snapshot actual del estado del store guardando todas las claves y valores en minikv.data y luego trunca el log de operaciones.
 pub fn ejecutar_snapshot(store: &Store) {
-    
     let mut file = match File::create(".minikv.data") {
         Ok(f) => f,
         Err(e) => {
@@ -103,24 +102,18 @@ pub fn ejecutar_snapshot(store: &Store) {
     };
 
     for (clave, valor) in store.iter() {
-        if let Err(e) = writeln!(
-            file,
-            "\"{}\" \"{}\"",
-            escapar(clave),
-            escapar(valor)
-        ) {
+        if let Err(e) = writeln!(file, "\"{}\" \"{}\"", escapar(clave), escapar(valor)) {
             println!("Error al escribir en snapshot: {}", e);
             return;
         }
     }
 
-    // vaciar log
     if let Err(e) = File::create(".minikv.log") {
         println!("Error al truncar log: {}", e);
     }
-
 }
 
+///Escapa comillas para persistencia segura.
 fn escapar(s: &str) -> String {
     s.replace('"', "\\\"")
 }

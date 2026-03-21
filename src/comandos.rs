@@ -1,6 +1,7 @@
+use crate::persistencia::{ejecutar_snapshot, guardar_delete, guardar_set};
 use crate::store::Store;
-use crate::persistencia::{guardar_set, guardar_delete, ejecutar_snapshot};
 
+///Ejecuta el comando ingresado por el usuario.
 pub fn ejecutar_comando(args: &[String], store: &mut Store) {
     match args.get(1) {
         Some(cmd) => match cmd.as_str() {
@@ -14,19 +15,22 @@ pub fn ejecutar_comando(args: &[String], store: &mut Store) {
     }
 }
 
+///Ejecuta el comando set.
+///Si recibe clave y valor los guarda.
+///Si recibe solo clave la borra.
 fn ejecutar_set(args: &[String], store: &mut Store) {
     match (args.get(2), args.get(3)) {
         (Some(clave), Some(valor)) => {
             store.set(clave.to_string(), valor.to_string());
             guardar_set(clave, valor);
-            
+
             println!("OK");
         }
 
         (Some(clave), None) => {
             store.delete(clave);
             guardar_delete(clave);
-            
+
             println!("OK");
         }
 
@@ -34,6 +38,8 @@ fn ejecutar_set(args: &[String], store: &mut Store) {
     }
 }
 
+///Ejecuta el comnado get.
+///Devuelve el valor asociado a la clave o "NOT FOUND" si no existe.
 fn ejecutar_get(args: &[String], store: &Store) {
     match args.get(2) {
         Some(clave) => match store.get(clave) {
@@ -44,6 +50,9 @@ fn ejecutar_get(args: &[String], store: &Store) {
     }
 }
 
+
+///Ejecuta el comando length.
+///Devuelve la cantidad de pares clave-valor almacenados.
 fn ejecutar_length(store: &Store) {
     println!("{}", store.len());
 }
