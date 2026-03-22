@@ -1,3 +1,4 @@
 target/
 .minikv.data
 .minikv.log
+*.zip
