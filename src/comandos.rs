@@ -56,3 +56,64 @@ fn ejecutar_get(args: &[String], store: &Store) {
 fn ejecutar_length(store: &Store) {
     println!("{}", store.len());
 }
+
+#[cfg(test)]
+mod comandos_tests {
+    use super::*;
+    use crate::store::Store;
+
+    #[test]
+    fn test_set_command() {
+        let mut store = Store::new();
+
+        let args = vec![
+            "minikv".to_string(),
+            "set".to_string(),
+            "a".to_string(),
+            "1".to_string(),
+        ];
+
+        ejecutar_comando(&args, &mut store);
+
+        assert_eq!(store.get("a").unwrap(), "1");
+    }
+
+    #[test]
+    fn test_unset_command() {
+        let mut store = Store::new();
+
+        let args_set = vec![
+            "minikv".to_string(),
+            "set".to_string(),
+            "a".to_string(),
+            "1".to_string(),
+        ];
+
+        ejecutar_comando(&args_set, &mut store);
+
+        let args_unset = vec![
+            "minikv".to_string(),
+            "set".to_string(),
+            "a".to_string(),
+        ];
+
+        ejecutar_comando(&args_unset, &mut store);
+
+        assert!(store.get("a").is_none());
+    }
+
+    #[test]
+    fn test_get_command() {
+        let mut store = Store::new();
+
+        store.set("x".to_string(), "10".to_string());
+
+        let args = vec![
+            "minikv".to_string(),
+            "get".to_string(),
+            "x".to_string(),
+        ];
+
+        ejecutar_comando(&args, &mut store);
+    }
+}

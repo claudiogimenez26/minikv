@@ -34,3 +34,29 @@ pub fn parse_line(line: &str) -> Vec<String> {
     }
     result
 }
+
+#[cfg(test)]
+mod parser_tests {
+    use super::parse_line;
+
+    #[test]
+    fn test_parse_simple() {
+        let result = parse_line("set clave valor");
+
+        assert_eq!(result, vec!["set", "clave", "valor"]);
+    }
+
+    #[test]
+    fn test_parse_con_comillas() {
+        let result = parse_line(r#"set clave "valor con espacios""#);
+
+        assert_eq!(result, vec!["set", "clave", "valor con espacios"]);
+    }
+
+    #[test]
+    fn test_parse_escapes() {
+        let result = parse_line(r#"set clave valor\ con\ espacios"#);
+
+        assert_eq!(result, vec!["set", "clave", "valor con espacios"]);
+    }
+}
