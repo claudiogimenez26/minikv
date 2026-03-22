@@ -45,16 +45,12 @@ pub fn cargar_data(path: &str, store: &mut Store) {
 /// - set "clave"   (equivale a delete/unset)
 pub fn aplicar_log(path: &str, store: &mut Store) {
     let file = File::open(path);
-
     if let Ok(file) = file {
         let reader = BufReader::new(file);
-
         for line in reader.lines().map_while(Result::ok) {
             let mut parts = parse_line(&line);
-
             if parts.len() >= 2 {
                 let comando = parts.remove(0);
-
                 if comando == "set" {
                     if parts.len() == 2 {
                         let clave = parts.remove(0);
