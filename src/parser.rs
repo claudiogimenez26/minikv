@@ -60,3 +60,10 @@ mod parser_tests {
         assert_eq!(result, vec!["set", "clave", "valor con espacios"]);
     }
 }
+
+#[test]
+fn test_parse_comillas_y_escape() {
+    let result = parse_line(r#"set "hola \" mundo" "chau \" mundo""#);
+
+    assert_eq!(result, vec!["set", "hola \" mundo", "chau \" mundo"]);
+}
