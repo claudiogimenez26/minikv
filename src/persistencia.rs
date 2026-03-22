@@ -25,8 +25,10 @@ pub fn cargar_data(path: &str, store: &mut Store) {
             if parts.len() == 2 {
                 let clave = parts.remove(0);
                 let valor = parts.remove(0);
-
                 store.set(clave, valor);
+            } else if !parts.is_empty() {
+                Error::InvalidDataFile.print();
+                return;
             }
         }
     }
@@ -57,14 +59,21 @@ pub fn aplicar_log(path: &str, store: &mut Store) {
                     if parts.len() == 2 {
                         let clave = parts.remove(0);
                         let valor = parts.remove(0);
-
                         store.set(clave, valor);
                     } else if parts.len() == 1 {
                         let clave = parts.remove(0);
-
                         store.delete(&clave);
+                    } else {
+                        Error::InvalidLogFile.print();
+                        return;
                     }
+                } else {
+                    Error::InvalidLogFile.print();
+                    return;
                 }
+            } else if !parts.is_empty() {
+                Error::InvalidLogFile.print();
+                return;
             }
         }
     }
@@ -79,15 +88,12 @@ pub fn aplicar_log(path: &str, store: &mut Store) {
 pub fn guardar_set(path: &str, clave: &str, valor: &str) {
     let mut log = match OpenOptions::new().create(true).append(true).open(path) {
         Ok(f) => f,
-        Err(e) => {
-            Error::Output(format!("Error abriendo log: {}", e)).print();
+        Err(_) => {
             return;
         }
     };
 
-    if let Err(e) = writeln!(log, "set \"{}\" \"{}\"", escapar(clave), escapar(valor)) {
-        Error::Output(format!("Error escribiendo log: {}", e)).print();
-    }
+    let _ = writeln!(log, "set \"{}\" \"{}\"", escapar(clave), escapar(valor));
 }
 
 /// Guarda una operación DELETE (unset) en el log.
@@ -98,15 +104,12 @@ pub fn guardar_set(path: &str, clave: &str, valor: &str) {
 pub fn guardar_delete(path: &str, clave: &str) {
     let mut log = match OpenOptions::new().create(true).append(true).open(path) {
         Ok(f) => f,
-        Err(e) => {
-            Error::Output(format!("Error abriendo log: {}", e)).print();
+        Err(_) => {
             return;
         }
     };
 
-    if let Err(e) = writeln!(log, "set \"{}\"", escapar(clave)) {
-        Error::Output(format!("Error escribiendo log: {}", e)).print();
-    }
+    let _ = writeln!(log, "set \"{}\"", escapar(clave));
 }
 
 /// Genera un snapshot del estado actual del store.
@@ -122,8 +125,7 @@ pub fn guardar_delete(path: &str, clave: &str) {
 pub fn ejecutar_snapshot(path_data: &str, path_log: &str, store: &Store) {
     let mut file = match File::create(path_data) {
         Ok(f) => f,
-        Err(e) => {
-            Error::Output(format!("Error al crear snapshot: {}", e)).print();
+        Err(_) => {
             return;
         }
     };
@@ -132,10 +134,7 @@ pub fn ejecutar_snapshot(path_data: &str, path_log: &str, store: &Store) {
         let _ = writeln!(file, "\"{}\" \"{}\"", escapar(clave), escapar(valor));
     }
 
-    // truncar log
-    if let Err(e) = File::create(path_log) {
-        Error::Output(format!("Error al truncar log: {}", e)).print();
-    }
+    let _ = File::create(path_log);
 }
 
 /// Escapa comillas dobles para almacenamiento seguro.

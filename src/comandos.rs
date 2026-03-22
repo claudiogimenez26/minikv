@@ -15,11 +15,11 @@ pub fn ejecutar_comando(args: &[String], store: &mut Store, log_path: &str) {
         Some(cmd) => match cmd.as_str() {
             "set" => ejecutar_set(args, store, log_path),
             "get" => ejecutar_get(args, store),
-            "length" => ejecutar_length(store),
+            "length" => ejecutar_length(args, store),
             "snapshot" => ejecutar_snapshot(DATA_PATH, log_path, store),
-            _ => Error::Command("Unknown command!".to_string()).print(),
+            _ => Error::UnknownCommand.print(),
         },
-        None => Error::Input("No command provided!".to_string()).print(),
+        None => Error::MissingArgument.print(),
     }
 }
 
@@ -29,40 +29,59 @@ pub fn ejecutar_comando(args: &[String], store: &mut Store, log_path: &str) {
 fn ejecutar_set(args: &[String], store: &mut Store, log_path: &str) {
     match (args.get(2), args.get(3)) {
         (Some(clave), Some(valor)) => {
+            if args.len() > 4 {
+                Error::ExtraArgument.print();
+                return;
+            }
+
             store.set(clave.to_string(), valor.to_string());
             guardar_set(log_path, clave, valor);
-
             println!("OK");
         }
 
         (Some(clave), None) => {
+            if args.len() > 3 {
+                Error::ExtraArgument.print();
+                return;
+            }
+
             store.delete(clave);
             guardar_delete(log_path, clave);
-
             println!("OK");
         }
 
-        (None, _) => {
-            Error::Input("No clave provided for set command!".to_string()).print()
-        }
+        (None, _) => Error::MissingArgument.print(),
     }
 }
 
 /// Ejecuta el comando get.
-/// Devuelve el valor o "NOT FOUND".
+/// Devuelve el valor o un error en formato pedido.
 fn ejecutar_get(args: &[String], store: &Store) {
     match args.get(2) {
-        Some(clave) => match store.get(clave) {
-            Some(valor) => println!("{}", valor),
-            None => println!("NOT FOUND"),
-        },
-        None => Error::Input("No clave provided for get command!".to_string()).print(),
+        Some(clave) => {
+            // validar argumentos extra
+            if args.len() > 3 {
+                Error::ExtraArgument.print();
+                return;
+            }
+
+            match store.get(clave) {
+                Some(valor) => println!("{}", valor),
+                None => Error::NotFound.print(),
+            }
+        }
+        None => Error::MissingArgument.print(),
     }
 }
 
 /// Ejecuta el comando length.
 /// Devuelve la cantidad de elementos.
-fn ejecutar_length(store: &Store) {
+fn ejecutar_length(args: &[String], store: &Store) {
+    if args.len() > 2 {
+        Error::ExtraArgument.print();
+        return;
+    }
+
     println!("{}", store.len());
 }
 
@@ -112,11 +131,7 @@ mod comandos_tests {
 
         ejecutar_comando(&args_set, &mut store, log_path);
 
-        let args_unset = vec![
-            "minikv".to_string(),
-            "set".to_string(),
-            "a".to_string(),
-        ];
+        let args_unset = vec!["minikv".to_string(), "set".to_string(), "a".to_string()];
 
         ejecutar_comando(&args_unset, &mut store, log_path);
 
@@ -134,11 +149,7 @@ mod comandos_tests {
 
         store.set("x".to_string(), "10".to_string());
 
-        let args = vec![
-            "minikv".to_string(),
-            "get".to_string(),
-            "x".to_string(),
-        ];
+        let args = vec!["minikv".to_string(), "get".to_string(), "x".to_string()];
 
         ejecutar_comando(&args, &mut store, log_path);
 

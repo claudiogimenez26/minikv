@@ -1,26 +1,25 @@
-/// Tipos de errores posibles en el sistema MiniKV.
-///
-/// Este enum centraliza todos los errores que pueden ocurrir
-/// durante la ejecución del programa:
-/// - Errores de entrada del usuario (Input)
-/// - Errores de salida o escritura (Output)
-/// - Errores de comandos inválidos (Command)
+/// Representa los errores posibles del sistema minikv,
+/// siguiendo el formato requerido.
 pub enum Error {
-    /// Error de entrada del usuario.
-    Input(String),
-    /// Error relacionado con la salida o escritura de datos.
-    Output(String),
-    /// Error relacionado con comandos inválidos o desconocidos.
-    Command(String),
+    NotFound,
+    ExtraArgument,
+    InvalidDataFile,
+    InvalidLogFile,
+    MissingArgument,
+    UnknownCommand,
 }
 
 impl Error {
-    ///Esta función se encarga de mostrar el mensaje de error al usuario, indicando el tipo de error (Input, Output o Command) y el mensaje específico.
+    /// Imprime el error en formato oficial:
+    /// ERROR: {TIPO}
     pub fn print(&self) {
         match self {
-            Error::Input(msg) => println!("Input error: {}", msg),
-            Error::Output(msg) => println!("Output error: {}", msg),
-            Error::Command(msg) => println!("Command error: {}", msg),
+            Error::NotFound => println!("ERROR: NOT FOUND"),
+            Error::ExtraArgument => println!("ERROR: EXTRA ARGUMENT"),
+            Error::InvalidDataFile => println!("ERROR: INVALID DATA FILE"),
+            Error::InvalidLogFile => println!("ERROR: INVALID LOG FILE"),
+            Error::MissingArgument => println!("ERROR: MISSING ARGUMENT"),
+            Error::UnknownCommand => println!("ERROR: UNKNOWN COMMAND"),
         }
     }
 }
