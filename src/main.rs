@@ -1,6 +1,7 @@
 use std::env;
 
 mod comandos;
+mod error;
 mod parser;
 mod persistencia;
 mod store;

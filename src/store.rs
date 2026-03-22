@@ -19,7 +19,7 @@ impl Store {
     pub fn set(&mut self, clave: String, valor: String) {
         self.data.insert(clave, valor);
     }
-    
+
     ///Obtiene el valor asociado a una clave, si existe.
     ///
     ///Devuelve `Some(valor)` si la clave existe o `None` si no existe.

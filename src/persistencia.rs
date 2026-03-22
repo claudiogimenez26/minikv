@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::parser::parse_line;
 use crate::store::Store;
 use std::fs::{File, OpenOptions};
@@ -62,13 +63,14 @@ pub fn guardar_set(clave: &str, valor: &str) {
     {
         Ok(f) => f,
         Err(e) => {
-            println!("Error abriendo log: {}", e);
+            Error::Output(format!("Error abriendo log: {}", e)).print();
+
             return;
         }
     };
 
     if let Err(e) = writeln!(log, "set \"{}\" \"{}\"", escapar(clave), escapar(valor)) {
-        println!("Error escribiendo log: {}", e);
+        Error::Output(format!("Error escribiendo log: {}", e)).print();
     }
 }
 
@@ -81,13 +83,14 @@ pub fn guardar_delete(clave: &str) {
     {
         Ok(f) => f,
         Err(e) => {
-            println!("Error abriendo log: {}", e);
+            Error::Output(format!("Error abriendo log: {}", e)).print();
+
             return;
         }
     };
 
     if let Err(e) = writeln!(log, "set \"{}\"", escapar(clave)) {
-        println!("Error escribiendo log: {}", e);
+        Error::Output(format!("Error escribiendo log: {}", e)).print();
     }
 }
 
@@ -96,20 +99,20 @@ pub fn ejecutar_snapshot(store: &Store) {
     let mut file = match File::create(".minikv.data") {
         Ok(f) => f,
         Err(e) => {
-            println!("Error al crear el archivo de snapshot: {}", e);
+            Error::Output(format!("Error al crear el archivo de snapshot: {}", e)).print();
             return;
         }
     };
 
     for (clave, valor) in store.iter() {
         if let Err(e) = writeln!(file, "\"{}\" \"{}\"", escapar(clave), escapar(valor)) {
-            println!("Error al escribir en snapshot: {}", e);
+            Error::Output(format!("Error al escribir en snapshot: {}", e)).print();
             return;
         }
     }
 
     if let Err(e) = File::create(".minikv.log") {
-        println!("Error al truncar log: {}", e);
+        Error::Output(format!("Error al truncar log: {}", e)).print();
     }
 }
 

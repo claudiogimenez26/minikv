@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::persistencia::{ejecutar_snapshot, guardar_delete, guardar_set};
 use crate::store::Store;
 
@@ -9,9 +10,9 @@ pub fn ejecutar_comando(args: &[String], store: &mut Store) {
             "get" => ejecutar_get(args, store),
             "length" => ejecutar_length(store),
             "snapshot" => ejecutar_snapshot(store),
-            _ => println!("Unknown command: {}", cmd),
+            _ => Error::Command("Unknown command!".to_string()).print(),
         },
-        None => println!("No command provided!"),
+        None => Error::Input("No command provided!".to_string()).print(),
     }
 }
 
@@ -34,7 +35,7 @@ fn ejecutar_set(args: &[String], store: &mut Store) {
             println!("OK");
         }
 
-        (None, _) => println!("No clave provided for set command!"),
+        (None, _) => Error::Input("No clave provided for set command!".to_string()).print(),
     }
 }
 
@@ -46,10 +47,9 @@ fn ejecutar_get(args: &[String], store: &Store) {
             Some(valor) => println!("{}", valor),
             None => println!("NOT FOUND"),
         },
-        None => println!("No clave provided for get command!"),
+        None => Error::Input("No clave provided for get command!".to_string()).print(),
     }
 }
-
 
 ///Ejecuta el comando length.
 ///Devuelve la cantidad de pares clave-valor almacenados.
