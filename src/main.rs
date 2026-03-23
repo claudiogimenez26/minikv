@@ -26,8 +26,10 @@ fn main() {
     let data_path = ".minikv.data";
     let log_path = ".minikv.log";
 
-    persistencia::cargar_data(data_path, &mut store);
-    persistencia::aplicar_log(log_path, &mut store);
+    let ok_data = persistencia::cargar_data(data_path, &mut store);
+    let ok_log = persistencia::aplicar_log(log_path, &mut store);
 
-    comandos::ejecutar_comando(&args, &mut store, log_path);
+    if ok_data && ok_log {
+        comandos::ejecutar_comando(&args, &mut store, log_path);
+    }
 }

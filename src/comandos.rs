@@ -16,7 +16,14 @@ pub fn ejecutar_comando(args: &[String], store: &mut Store, log_path: &str) {
             "set" => ejecutar_set(args, store, log_path),
             "get" => ejecutar_get(args, store),
             "length" => ejecutar_length(args, store),
-            "snapshot" => ejecutar_snapshot(DATA_PATH, log_path, store),
+            "snapshot" => {
+                if args.len() > 2 {
+                    Error::ExtraArgument.print();
+                } else {
+                    ejecutar_snapshot(DATA_PATH, log_path, store);
+                    println!("OK");
+                }
+            }
             _ => Error::UnknownCommand.print(),
         },
         None => Error::MissingArgument.print(),

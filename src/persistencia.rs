@@ -13,7 +13,7 @@ use std::io::{BufRead, BufReader, Write};
 /// # Comportamiento
 /// - Si el archivo no existe, no hace nada
 /// - Cada línea debe contener: "clave" "valor"
-pub fn cargar_data(path: &str, store: &mut Store) {
+pub fn cargar_data(path: &str, store: &mut Store) -> bool {
     let file = File::open(path);
 
     if let Ok(file) = file {
@@ -28,10 +28,12 @@ pub fn cargar_data(path: &str, store: &mut Store) {
                 store.set(clave, valor);
             } else if !parts.is_empty() {
                 Error::InvalidDataFile.print();
-                return;
+                return false;
             }
         }
     }
+
+    true
 }
 
 /// Aplica el log de operaciones para reconstruir el estado.
@@ -43,36 +45,35 @@ pub fn cargar_data(path: &str, store: &mut Store) {
 /// # Formato soportado
 /// - set "clave" "valor"
 /// - set "clave"   (equivale a delete/unset)
-pub fn aplicar_log(path: &str, store: &mut Store) {
+pub fn aplicar_log(path: &str, store: &mut Store) -> bool {
     let file = File::open(path);
     if let Ok(file) = file {
         let reader = BufReader::new(file);
         for line in reader.lines().map_while(Result::ok) {
             let mut parts = parse_line(&line);
-            if parts.len() >= 2 {
-                let comando = parts.remove(0);
-                if comando == "set" {
-                    if parts.len() == 2 {
-                        let clave = parts.remove(0);
-                        let valor = parts.remove(0);
-                        store.set(clave, valor);
-                    } else if parts.len() == 1 {
-                        let clave = parts.remove(0);
-                        store.delete(&clave);
-                    } else {
-                        Error::InvalidLogFile.print();
-                        return;
-                    }
+            if parts.is_empty() {
+                continue;
+            }
+            let comando = parts.remove(0);
+            if comando == "set" {
+                if parts.len() == 2 {
+                    let clave = parts.remove(0);
+                    let valor = parts.remove(0);
+                    store.set(clave, valor);
+                } else if parts.len() == 1 {
+                    let clave = parts.remove(0);
+                    store.delete(&clave);
                 } else {
                     Error::InvalidLogFile.print();
-                    return;
+                    return false;
                 }
-            } else if !parts.is_empty() {
+            } else {
                 Error::InvalidLogFile.print();
-                return;
+                return false;
             }
         }
     }
+    true
 }
 
 /// Guarda una operación SET en el log.
