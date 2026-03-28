@@ -1,5 +1,4 @@
-use std::env;
-
+use comandos::process_line;
 mod comandos;
 mod error;
 mod parser;
@@ -19,8 +18,6 @@ use store::Store;
 /// - .minikv.data: snapshot inicial con pares clave-valor
 /// - .minikv.log: log de operaciones para reconstruir el estado
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
     let mut store = Store::new();
 
     let data_path = ".minikv.data";
@@ -29,7 +26,16 @@ fn main() {
     let ok_data = persistencia::cargar_data(data_path, &mut store);
     let ok_log = persistencia::aplicar_log(log_path, &mut store);
 
-    if ok_data && ok_log {
-        comandos::ejecutar_comando(&args, &mut store, log_path);
+    if !ok_data {
+        println!("{}", error::Error::InvalidDataFile.to_string());
+        return;
     }
+
+    if !ok_log {
+        println!("{}", error::Error::InvalidLogFile.to_string());
+        return;
+    }
+
+    println!("{}", process_line("set a b", &mut store, log_path));
+    println!("{}", process_line("get a", &mut store, log_path));
 }

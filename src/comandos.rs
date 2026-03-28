@@ -10,86 +10,99 @@ const DATA_PATH: &str = ".minikv.data";
 /// - `args`: argumentos de línea de comandos
 /// - `store`: store en memoria
 /// - `log_path`: ruta del archivo de log
-pub fn ejecutar_comando(args: &[String], store: &mut Store, log_path: &str) {
-    match args.get(1) {
+pub fn ejecutar_comando(args: &[String], store: &mut Store, log_path: &str) -> String{
+    match args.get(0) {
         Some(cmd) => match cmd.as_str() {
             "set" => ejecutar_set(args, store, log_path),
             "get" => ejecutar_get(args, store),
             "length" => ejecutar_length(args, store),
             "snapshot" => {
                 if args.len() > 2 {
-                    Error::ExtraArgument.print();
+                    Error::ExtraArgument.to_string()
                 } else {
                     ejecutar_snapshot(DATA_PATH, log_path, store);
-                    println!("OK");
+                    "OK".to_string()
                 }
             }
-            _ => Error::UnknownCommand.print(),
+            _ => Error::UnknownCommand.to_string(),
         },
-        None => Error::MissingArgument.print(),
+        None => Error::MissingArgument.to_string(),
     }
 }
 
 /// Ejecuta el comando set.
 /// - Si recibe clave y valor → guarda
 /// - Si recibe solo clave → elimina
-fn ejecutar_set(args: &[String], store: &mut Store, log_path: &str) {
-    match (args.get(2), args.get(3)) {
+fn ejecutar_set(
+    args: &[String],
+    store: &mut Store,
+    log_path: &str,
+) -> String {
+    match (args.get(1), args.get(2)) {
         (Some(clave), Some(valor)) => {
-            if args.len() > 4 {
-                Error::ExtraArgument.print();
-                return;
+            if args.get(3).is_some() {
+                return Error::ExtraArgument.to_string();
             }
 
             store.set(clave.to_string(), valor.to_string());
             guardar_set(log_path, clave, valor);
-            println!("OK");
+
+            "OK".to_string()
         }
 
         (Some(clave), None) => {
-            if args.len() > 3 {
-                Error::ExtraArgument.print();
-                return;
+            if args.get(2).is_some() {
+                return Error::ExtraArgument.to_string();
             }
 
             store.delete(clave);
             guardar_delete(log_path, clave);
-            println!("OK");
+
+            "OK".to_string()
         }
 
-        (None, _) => Error::MissingArgument.print(),
+        (None, _) => Error::MissingArgument.to_string(),
     }
 }
 
 /// Ejecuta el comando get.
 /// Devuelve el valor o un error en formato pedido.
-fn ejecutar_get(args: &[String], store: &Store) {
-    match args.get(2) {
+fn ejecutar_get(args: &[String], store: &Store) -> String {
+    match args.get(1) {
         Some(clave) => {
             // validar argumentos extra
-            if args.len() > 3 {
-                Error::ExtraArgument.print();
-                return;
-            }
+            if args.len() > 2 {
+                return Error::ExtraArgument.to_string();
+           } 
 
             match store.get(clave) {
-                Some(valor) => println!("{}", valor),
-                None => Error::NotFound.print(),
+                Some(valor) => valor.to_string(),
+                None => Error::NotFound.to_string(),
             }
         }
-        None => Error::MissingArgument.print(),
+        None => Error::MissingArgument.to_string(),
     }
 }
 
 /// Ejecuta el comando length.
 /// Devuelve la cantidad de elementos.
-fn ejecutar_length(args: &[String], store: &Store) {
-    if args.len() > 2 {
-        Error::ExtraArgument.print();
-        return;
-    }
+fn ejecutar_length(args: &[String], store: &Store) -> String {
+    if args.len() > 1 {
+        return Error::ExtraArgument.to_string()
+    } 
+     store.len().to_string()
+}
 
-    println!("{}", store.len());
+pub fn process_line(input: &str, store: &mut Store, log_path: &str,) -> String {
+    let input = input.trim();
+    if input.is_empty() {
+        return crate::error::Error::UnknownCommand.to_string();
+    }
+    let args: Vec<String> = input
+    .split_whitespace()
+    .map(|s| s.to_string())
+    .collect();
+    ejecutar_comando(&args, store, log_path)
 }
 
 #[cfg(test)]

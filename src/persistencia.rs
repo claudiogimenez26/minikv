@@ -1,4 +1,3 @@
-use crate::error::Error;
 use crate::parser::parse_line;
 use crate::store::Store;
 use std::fs::{File, OpenOptions};
@@ -27,7 +26,6 @@ pub fn cargar_data(path: &str, store: &mut Store) -> bool {
                 let valor = parts.remove(0);
                 store.set(clave, valor);
             } else if !parts.is_empty() {
-                Error::InvalidDataFile.print();
                 return false;
             }
         }
@@ -64,12 +62,10 @@ pub fn aplicar_log(path: &str, store: &mut Store) -> bool {
                     let clave = parts.remove(0);
                     store.delete(&clave);
                 } else {
-                    Error::InvalidLogFile.print();
-                    return false;
+                    false;
                 }
             } else {
-                Error::InvalidLogFile.print();
-                return false;
+                false;
             }
         }
     }
