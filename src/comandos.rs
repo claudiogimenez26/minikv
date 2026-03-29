@@ -1,6 +1,7 @@
 use crate::error::Error;
 use crate::persistencia::{ejecutar_snapshot, guardar_delete, guardar_set};
 use crate::store::Store;
+use std::sync::{Arc, Mutex};
 
 const DATA_PATH: &str = ".minikv.data";
 
@@ -10,7 +11,7 @@ const DATA_PATH: &str = ".minikv.data";
 /// - `args`: argumentos de línea de comandos
 /// - `store`: store en memoria
 /// - `log_path`: ruta del archivo de log
-pub fn ejecutar_comando(args: &[String], store: &mut Store, log_path: &str) -> String{
+pub fn ejecutar_comando(args: &[String], store: &Arc<Mutex<Store>>, log_path: &str) -> String{
     match args.get(0) {
         Some(cmd) => match cmd.as_str() {
             "set" => ejecutar_set(args, store, log_path),
@@ -20,7 +21,8 @@ pub fn ejecutar_comando(args: &[String], store: &mut Store, log_path: &str) -> S
                 if args.len() > 2 {
                     Error::ExtraArgument.to_string()
                 } else {
-                    ejecutar_snapshot(DATA_PATH, log_path, store);
+                    let s = store.lock().unwrap();
+                    ejecutar_snapshot(DATA_PATH, log_path, &*s);
                     "OK".to_string()
                 }
             }
@@ -35,7 +37,7 @@ pub fn ejecutar_comando(args: &[String], store: &mut Store, log_path: &str) -> S
 /// - Si recibe solo clave → elimina
 fn ejecutar_set(
     args: &[String],
-    store: &mut Store,
+    store: &Arc<Mutex<Store>>,
     log_path: &str,
 ) -> String {
     match (args.get(1), args.get(2)) {
@@ -44,7 +46,8 @@ fn ejecutar_set(
                 return Error::ExtraArgument.to_string();
             }
 
-            store.set(clave.to_string(), valor.to_string());
+            let mut s = store.lock().unwrap();
+            s.set(clave.to_string(), valor.to_string());
             guardar_set(log_path, clave, valor);
 
             "OK".to_string()
@@ -55,7 +58,9 @@ fn ejecutar_set(
                 return Error::ExtraArgument.to_string();
             }
 
-            store.delete(clave);
+            
+            let mut s = store.lock().unwrap();
+            s.delete(clave);
             guardar_delete(log_path, clave);
 
             "OK".to_string()
@@ -67,7 +72,7 @@ fn ejecutar_set(
 
 /// Ejecuta el comando get.
 /// Devuelve el valor o un error en formato pedido.
-fn ejecutar_get(args: &[String], store: &Store) -> String {
+fn ejecutar_get(args: &[String], store: &Arc<Mutex<Store>>) -> String {
     match args.get(1) {
         Some(clave) => {
             // validar argumentos extra
@@ -75,7 +80,8 @@ fn ejecutar_get(args: &[String], store: &Store) -> String {
                 return Error::ExtraArgument.to_string();
            } 
 
-            match store.get(clave) {
+           let s = store.lock().unwrap(); 
+           match s.get(clave) {
                 Some(valor) => valor.to_string(),
                 None => Error::NotFound.to_string(),
             }
@@ -86,14 +92,16 @@ fn ejecutar_get(args: &[String], store: &Store) -> String {
 
 /// Ejecuta el comando length.
 /// Devuelve la cantidad de elementos.
-fn ejecutar_length(args: &[String], store: &Store) -> String {
+fn ejecutar_length(args: &[String], store: &Arc<Mutex<Store>>) -> String {
     if args.len() > 1 {
         return Error::ExtraArgument.to_string()
     } 
-     store.len().to_string()
+     
+    let s = store.lock().unwrap();
+    s.len().to_string()
 }
 
-pub fn process_line(input: &str, store: &mut Store, log_path: &str,) -> String {
+pub fn process_line(input: &str, store: &Arc<Mutex<Store>>, log_path: &str,) -> String {
     let input = input.trim();
     if input.is_empty() {
         return crate::error::Error::UnknownCommand.to_string();
