@@ -43,8 +43,26 @@ fn main() {
     let listener = TcpListener::bind(addr).unwrap();
     println!("MiniKV server listening on {}", addr);
 
+    let mut store = Store::new();
+    let data_path = ".minikv.data";
+    let log_path = ".minikv.log";
+    println!("Cargando data desde archivos...");
+    let ok_data = minikv::persistencia::cargar_data(data_path, &mut store);
+    println!("Aplicando log de operaciones...");
+    let ok_log = minikv::persistencia::aplicar_log(log_path, &mut store);
+
+    if !ok_data {
+        println!("{}", minikv::error::Error::InvalidDataFile.to_string());
+        return;        
+    }
+
+    if !ok_log {
+        println!("{}", minikv::error::Error::InvalidLogFile.to_string());
+        return;        
+    }
+
     // store compartido entre threads
-    let store = Arc::new(Mutex::new(Store::new()));
+    let store = Arc::new(Mutex::new(store));
     let log_path = ".minikv.log";
     // aceptar conexiones
     for stream in listener.incoming() {
